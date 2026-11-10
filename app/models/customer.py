@@ -8,6 +8,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    UniqueConstraint,
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -22,6 +23,12 @@ class Customer(Base):
         CheckConstraint(
             "customer_type IN ('individual', 'company')",
             name="ck_customer_type",
+        ),
+
+        UniqueConstraint(
+            "business_id",
+            "id",
+            name="uq_customer_business_id",
         ),
         CheckConstraint(
             """
