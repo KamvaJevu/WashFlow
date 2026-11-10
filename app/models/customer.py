@@ -127,3 +127,7 @@ class Customer(Base):
     business: Mapped["Business"] = relationship(
         back_populates="customers",
     )
+
+    vehicles: Mapped[list["Vehicle"]] = relationship(
+        back_populates="customer",
+    )
