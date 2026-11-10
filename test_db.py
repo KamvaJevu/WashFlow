@@ -1,16 +1,12 @@
 
-from sqlalchemy import create_engine, text
-from app.core.config import settings
-
-engine = create_engine(settings.database_url)
+from app.db.database import engine, SessionLocal, Base
 
 try:
     with engine.connect() as connection:
-        result = connection.execute(text("SELECT current_database()"))
-        database_name = result.scalar()
-
         print("PostgreSQL connection successful!")
-        print("Connected database:", database_name)
+        print("Database engine:", engine.dialect.name)
+        print("Session factory:", SessionLocal is not None)
+        print("Model base:", Base.__name__)
 
 except Exception as error:
     print("Database connection failed:")
