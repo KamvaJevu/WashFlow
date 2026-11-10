@@ -63,3 +63,7 @@ class Business(Base):
     memberships: Mapped[list["BusinessMembership"]] = relationship(
         back_populates="business"
     )
+
+    customers: Mapped[list["Customer"]] = relationship(
+        back_populates="business",
+    )
