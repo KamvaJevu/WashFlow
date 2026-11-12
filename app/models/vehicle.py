@@ -1,9 +1,11 @@
 from datetime import datetime
 
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     DateTime,
     ForeignKeyConstraint,
+    Index,
     Integer,
     String,
     Text,
@@ -30,8 +32,44 @@ class Vehicle(Base):
         ForeignKeyConstraint(
             ["business_id", "customer_id"],
             ["customers.business_id", "customers.id"],
-            ondelete="CASCADE",
+            ondelete="RESTRICT",
             name="fk_vehicle_customer_business",
+        ),
+
+        CheckConstraint(
+            """
+        (
+        is_archived = FALSE
+            AND archived_at IS NULL
+            AND archived_by_membership_id IS NULL
+            AND archive_reason IS NULL
+            AND archive_source IS NULL
+        )
+        OR
+        (
+        is_archived = TRUE
+            AND archived_at IS NOT NULL
+            AND archived_by_membership_id IS NOT NULL
+            AND archive_reason IS NOT NULL
+            AND length(trim(archive_reason)) > 0
+            AND archive_source IS NOT NULL
+            AND archive_source IN ('independent', 'customer')
+        )
+            """,
+            name="ck_vehicle_archive_consistency",
+        ),
+
+    ForeignKeyConstraint(
+        ["business_id", "archived_by_membership_id"],
+        ["business_memberships.business_id", "business_memberships.id"],
+        ondelete="RESTRICT",
+        name="fk_vehicle_archived_by_membership",
+        ),
+
+    Index(
+        "ix_vehicles_business_archived",
+        "business_id",
+        "is_archived",
         ),
     )
 
@@ -78,6 +116,33 @@ class Vehicle(Base):
 
     notes: Mapped[str | None] = mapped_column(
         Text,
+        nullable=True,
+    )
+
+    is_archived: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        server_default="false",
+        nullable=False,
+    )
+
+    archived_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    archived_by_membership_id: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+    )
+
+    archive_reason: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    archive_source: Mapped[str | None] = mapped_column(
+        String(20),
         nullable=True,
     )
 

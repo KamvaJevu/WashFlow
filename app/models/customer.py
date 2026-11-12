@@ -1,10 +1,12 @@
-
 from datetime import datetime
 
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     DateTime,
     ForeignKey,
+    ForeignKeyConstraint,
+    Index,
     Integer,
     String,
     Text,
@@ -48,6 +50,39 @@ class Customer(Base):
             """,
             name="ck_customer_identity",
         ),
+
+        CheckConstraint(
+        """
+        (
+            is_archived = FALSE
+            AND archived_at IS NULL
+            AND archived_by_membership_id IS NULL
+            AND archive_reason IS NULL
+        )
+        OR
+        (
+            is_archived = TRUE
+            AND archived_at IS NOT NULL
+            AND archived_by_membership_id IS NOT NULL
+            AND archive_reason IS NOT NULL
+            AND length(trim(archive_reason)) > 0
+            )
+            """,
+            name="ck_customer_archive_consistency",
+        ),
+
+        ForeignKeyConstraint(
+            ["business_id", "archived_by_membership_id"],
+            ["business_memberships.business_id", "business_memberships.id"],
+            ondelete="RESTRICT",
+            name="fk_customer_archived_by_membership",
+        ),
+
+        Index(
+            "ix_customers_business_archived",
+            "business_id",
+            "is_archived",
+        ),
     )
 
     id: Mapped[int] = mapped_column(
@@ -56,9 +91,9 @@ class Customer(Base):
     )
 
     business_id: Mapped[int] = mapped_column(
-        ForeignKey("businesses.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
+    ForeignKey("businesses.id", ondelete="RESTRICT"),
+    nullable=False,
+    index=True
     )
 
     customer_type: Mapped[str] = mapped_column(
@@ -107,6 +142,28 @@ class Customer(Base):
     )
 
     address: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    is_archived: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        server_default="false",
+        nullable=False,
+    )
+
+    archived_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    archived_by_membership_id: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+    )
+
+    archive_reason: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
     )

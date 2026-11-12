@@ -1,4 +1,3 @@
-
 from datetime import datetime
 
 from sqlalchemy import (
@@ -32,6 +31,12 @@ class BusinessMembership(Base):
             "status IN ('invited', 'active', 'suspended')",
             name="ck_membership_status",
         ),
+
+        UniqueConstraint(
+            "business_id",
+            "id",
+            name="uq_membership_business_id",
+        ),
     )
 
     id: Mapped[int] = mapped_column(
@@ -40,13 +45,13 @@ class BusinessMembership(Base):
     )
 
     business_id: Mapped[int] = mapped_column(
-        ForeignKey("businesses.id", ondelete="CASCADE"),
+        ForeignKey("businesses.id", ondelete="RESTRICT"),
         nullable=False,
         index=True
     )
 
     user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"),
+        ForeignKey("users.id", ondelete="RESTRICT"),
         nullable=False,
         index=True
     )
