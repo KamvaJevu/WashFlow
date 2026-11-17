@@ -1,12 +1,13 @@
-
 from logging.config import fileConfig
 
 from alembic import context
+from sqlalchemy import create_engine, pool
 
 from app.core.config import settings
-from app.db.database import Base, engine
+from app.db.database import Base
 
 import app.models
+
 
 # Alembic configuration
 config = context.config
@@ -21,11 +22,27 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 
+def get_database_url() -> str:
+    """Get an explicitly supplied database URL or use the application default."""
+
+    supplied_url = config.attributes.get("database_url")
+
+    if supplied_url:
+        return supplied_url
+
+    x_args = context.get_x_argument(as_dictionary=True)
+
+    if "database_url" in x_args:
+        return x_args["database_url"]
+
+    return config.get_main_option("sqlalchemy.url") or settings.database_url
+
+
 def run_migrations_offline() -> None:
     """Run migrations without creating a database connection."""
 
     context.configure(
-        url=settings.database_url,
+        url=get_database_url(),
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
@@ -39,15 +56,23 @@ def run_migrations_offline() -> None:
 def run_migrations_online() -> None:
     """Run migrations using a live database connection."""
 
-    with engine.connect() as connection:
-        context.configure(
-            connection=connection,
-            target_metadata=target_metadata,
-            compare_type=True,
-        )
+    database_engine = create_engine(
+        get_database_url(),
+        poolclass=pool.NullPool,
+    )
 
-        with context.begin_transaction():
-            context.run_migrations()
+    try:
+        with database_engine.connect() as connection:
+            context.configure(
+                connection=connection,
+                target_metadata=target_metadata,
+                compare_type=True,
+            )
+
+            with context.begin_transaction():
+                context.run_migrations()
+    finally:
+        database_engine.dispose()
 
 
 if context.is_offline_mode():

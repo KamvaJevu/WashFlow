@@ -1,8 +1,7 @@
-
 from collections.abc import Generator
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.core.config import settings
 
@@ -10,7 +9,7 @@ from app.core.config import settings
 # PostgreSQL database engine
 engine = create_engine(
     settings.database_url,
-    pool_pre_ping=True
+    pool_pre_ping=True,
 )
 
 
@@ -18,7 +17,7 @@ engine = create_engine(
 SessionLocal = sessionmaker(
     bind=engine,
     autoflush=False,
-    autocommit=False
+    autocommit=False,
 )
 
 
@@ -28,7 +27,7 @@ class Base(DeclarativeBase):
 
 
 # Database session dependency
-def get_db() -> Generator:
+def get_db() -> Generator[Session, None, None]:
     db = SessionLocal()
 
     try:
